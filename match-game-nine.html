@@ -1,0 +1,308 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Untitled Document</title>
+</head>
+
+<body>
+	<style>
+	@font-face {
+  font-family: gametext;
+  src: url(Syne-Bold.woff) format('woff');
+}
+		.intro {
+			font-family: gametext;
+			font-size: 22px;
+			color: #1A3263;
+		}
+	.grid {
+		position: relative;
+		background-color: #233068;
+		width: 100%;
+		margin-left: 50px;
+		margin-right: 15px;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-around;
+		align-items: center;
+		padding: 30px;}
+
+
+.card {
+  display: flex;
+  position: relative;
+  transition: all .4s linear;
+  transform-style: preserve-3d;
+  margin: 10px;
+}
+
+.card,
+.back,
+.front,
+.blank {
+  height: 236px;
+  width: 236px;
+}
+
+.back,
+.front {
+  position: absolute;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.front {
+  background: url(' cover-card.png') no-repeat center center / contain;
+	cursor: pointer;
+}
+
+.back {
+  transform: rotateY(180deg);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center center;
+}		
+.selected {
+  transform: rotateY(180deg);
+}
+.match {
+  transform: rotateY(180deg);
+}
+
+.match .back {
+  transition-property: all;
+  transition-duration: 2s;
+  transition-timing-function: linear;
+opacity: 0.75;
+}
+.centerdone {
+  transition-property: all;
+  transition-duration: 4s;
+  transition-timing-function: linear;
+opacity: 0.45;
+}	
+
+#game {
+	position: relative;
+	margin-left: auto;
+	margin-right: auto;
+}
+.overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: 1;
+	display: none;
+	opacity: 0;
+	transition: all .3s linear;
+	}
+.ol-visible {
+  display: block;
+}
+.ol-open {
+  opacity: 1;
+}
+.overlay img {
+	margin-top: 50px;
+	display: block;
+	width: 85%;
+	margin-left: auto;
+	margin-right: auto;
+	}
+</style>
+	<p class="intro">In 2011, Capt. Chris Ferguson, a Drexel College of Engineering alumnus,
+commanded the space shuttle Atlantis on its final NASA mission. His
+celebrated shuttle career behind him, Ferguson was unsure what to do next.
+He considered teaching at Drexel. Then, Boeing stepped in with an irresistible
+offer – piloting its next-generation spacecraft, the CST-100 Starliner, to the
+International Space Station. Ferguson accepted the offer heartily and a new
+national chapter in space travel began.</p>
+	<div style="max-width: 832px;">
+		<div class="game-container" id="game">
+
+		</div>
+	
+	</div>
+	
+<script>
+	// Card data
+const cardsArray = [
+{
+    'name': 'saturn',
+    'img': 'card01.png',
+    'olimg': 'overlay01.png',
+  },
+  {
+    'name': 'ship',
+    'img': 'card02.png',
+    'olimg': 'overlay02.png',
+  },
+  {
+    'name': 'satellite',
+    'img': 'card04.png',
+    'olimg': 'overlay04.png',
+  },
+  {
+    'name': 'astronaut',
+    'img': 'card05.png',
+    'olimg': 'overlay05.png',
+  }
+		];
+var gameGrid = cardsArray.concat(cardsArray).sort(function () {
+  return 0.5 - Math.random();
+});
+
+var firstGuess = '';
+var secondGuess = '';
+var count = 0;
+var previousTarget = null;
+var delay = 1200;
+var olsrc = "";
+var cardcount = 0;
+var matchcount = 0;
+var olend = 'CONGRATS.png';
+
+var game = document.getElementById('game');
+var grid = document.createElement('section');
+grid.setAttribute('class', 'grid');
+game.appendChild(grid);
+
+gameGrid.forEach(function (item) {
+  var name = item.name,
+  olimg = item.olimg,
+  img = item.img;
+  cardcount++;
+
+  if (cardcount === 5) {
+  var card = document.createElement('div');
+  card.classList.add('card');
+	  var blankcard = document.createElement('div');
+	  blankcard.setAttribute("id","centersquare");
+	  blankcard.classList.add('blank');
+	  blankcard.style.backgroundImage = "url('matched.png')";
+    grid.appendChild(card);
+  card.appendChild(blankcard);
+  }
+
+  var card = document.createElement('div');
+  card.classList.add('card');
+  card.dataset.name = name;
+  card.dataset.olimg = olimg;
+
+  var front = document.createElement('div');
+  front.classList.add('front');
+
+  var back = document.createElement('div');
+  back.classList.add('back');
+  back.style.backgroundImage = 'url(' + img + ')';
+
+  grid.appendChild(card);
+  card.appendChild(front);
+  card.appendChild(back);
+});
+
+var details = document.createElement('div');
+details.classList.add('overlay');
+details.id = "oldiv";
+grid.appendChild(details);
+var detailimage = document.createElement('img');
+	detailimage.src="overlay.png";
+	detailimage.id ="overlayimage";
+	detailimage.classList.add('overlayimg');
+	details.appendChild(detailimage);
+
+
+var match = function match() {
+  var selected = document.querySelectorAll('.selected');
+	matchcount++;
+  selected.forEach(function (card) {
+    card.classList.add('match');
+  });
+	document.getElementById('overlayimage').src = olsrc;
+    details.classList.add('ol-visible');
+    setTimeout(function () {
+      details.classList.add('ol-open');
+    }, 20);
+};
+
+var resetGuesses = function resetGuesses() {
+  firstGuess = '';
+  secondGuess = '';
+  count = 0;
+  previousTarget = null;
+
+  var selected = document.querySelectorAll('.selected');
+  selected.forEach(function (card) {
+    card.classList.remove('selected');
+  });
+};
+
+grid.addEventListener('click', function (event) {
+
+	var clicked = event.target;
+	console.log("ELEMENT " + clicked.nodeName + "  CLASS " + clicked.classList);
+
+	if (details.classList.contains("ol-open")) 	{
+		details.classList.remove('ol-open');
+		setTimeout(function () {
+ 			details.classList.remove('ol-visible');
+		if (matchcount === 4) {
+			matchcount++;
+			document.getElementById('centersquare').classList.add('centerdone');
+			document.getElementById('overlayimage').src = olend;
+			details.classList.add('ol-visible');
+			setTimeout(function () {
+				details.classList.add('ol-open');
+				}, 20);
+		}
+    }, 500);
+		return;
+	}
+
+	if (details.classList.contains("ol-visible")) {
+		console.log("* details visible *");
+		details.classList.remove('ol-visible');
+		return;
+	}
+
+  if (clicked.parentNode.classList.contains('match')) {
+	olsrc = clicked.parentNode.dataset.olimg;
+	document.getElementById('overlayimage').src = olsrc;
+    details.classList.add('ol-visible');
+    setTimeout(function () {
+      details.classList.add('ol-open');
+    }, 20);
+    return;
+  }
+
+  if (clicked.nodeName === 'SECTION' || clicked === previousTarget || clicked.parentNode.classList.contains('selected') || clicked.classList.contains('blank')) {
+    return;
+  }
+
+  if (count < 2) {
+    count++;
+    if (count === 1) {
+      firstGuess = clicked.parentNode.dataset.name;
+      console.log(firstGuess);
+      clicked.parentNode.classList.add('selected');
+    } else {
+      secondGuess = clicked.parentNode.dataset.name;
+      console.log(secondGuess);
+      clicked.parentNode.classList.add('selected');
+    }
+
+    if (firstGuess && secondGuess) {
+      if (firstGuess === secondGuess) {
+		olsrc = clicked.parentNode.dataset.olimg;
+        setTimeout(match, delay);
+
+      }
+      setTimeout(resetGuesses, delay);
+    }
+    previousTarget = clicked;
+  }
+});	</script>
+</body>
+</html>
